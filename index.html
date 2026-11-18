@@ -9,61 +9,26 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 -apple-system,system-ui,sans-serif;padding:32px 16px}
 .wrap{max-width:440px;margin:0 auto}
-.card{background:var(--card);border-radius:18px;padding:24px 20px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
-.lbl{font-size:13px;color:var(--mute);margin:14px 0 2px}
-.lbl:first-child{margin-top:0}
-.val{font-size:20px;word-break:break-word}
+.card{background:var(--card);border-radius:18px;padding:24px 20px;box-shadow:0 6px 24px rgba(0,0,0,.08);font-size:22px;text-align:center}
 a.btn{display:block;text-align:center;min-height:52px;line-height:52px;border-radius:14px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600;margin-top:22px}
-p.n{color:var(--mute);font-size:14px;text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="card" id="card"></div>
+  <div class="card" id="card">No card in this link.</div>
   <a class="btn" id="go" href="#">Add to Anki</a>
-  <p class="n" id="msg"></p>
 </div>
 <script>
-{
-  const card = document.getElementById('card');
-  const msg = document.getElementById('msg');
-  const go = document.getElementById('go');
-  const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  let last = null;
-
-  function render() {
-    const raw = location.hash.slice(1);
-    if (raw === last) return;
-    last = raw;
-
-    const p = new URLSearchParams(raw.replace(/\+/g, '%2B'));
-    if (!p.has('type')) p.set('type', 'Basic');
-    if (!p.has('deck')) p.set('deck', 'Default');
-    const fields = [...p.entries()].filter(([k]) => k.startsWith('fld'));
-
-    if (!fields.length) {
-      card.innerHTML = '<div class="val">No card in this link.</div>';
-      go.style.display = 'none';
-      msg.textContent = '';
-      return;
-    }
-
-    card.innerHTML = fields.map(([k, v]) =>
-      `<div class="lbl">${esc(k.slice(3))}</div><div class="val">${esc(v).replace(/&lt;br\s*\/?&gt;/gi, '<br>')}</div>`
-    ).join('') + `<div class="lbl">Deck</div><div class="val">${esc(p.get('deck'))}</div>`;
-
-    const q = [...p.entries()].map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-    const url = 'anki://x-callback-url/addnote?' + q;
-    go.style.display = '';
-    go.href = url;
-    msg.textContent = 'Opening AnkiMobile… if nothing happens, tap the button.';
-    setTimeout(() => { location.href = url; }, 300);
-  }
-
-  render();
-  window.addEventListener('hashchange', render);
-  window.addEventListener('pageshow', () => { last = null; render(); });
+const p = new URLSearchParams(location.search);
+if (!p.has('type')) p.set('type', 'Basic');
+if (!p.has('deck')) p.set('deck', 'Default');
+if (p.has('fldFront')) {
+  document.getElementById('card').innerText =
+    p.get('fldFront') + '\n' + (p.get('fldBack') || '').replace(/<br>/g, '\n');
 }
+const url = 'anki://x-callback-url/addnote?' + p.toString();
+document.getElementById('go').href = url;
+if (p.has('fldFront')) setTimeout(() => { location.href = url; }, 300);
 </script>
 </body>
 </html>
