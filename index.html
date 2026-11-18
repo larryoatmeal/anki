@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Anki</title>
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#f6f7f9,#14161a);--card:light-dark(#fff,#1e2127);--ink:light-dark(#15171a,#eef0f3);--mute:light-dark(#5b6270,#9aa3b2);--acc:#2f7de1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 -apple-system,system-ui,sans-serif;padding:32px 16px}
+.wrap{max-width:440px;margin:0 auto}
+.card{background:var(--card);border-radius:18px;padding:24px 20px;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+.lbl{font-size:13px;color:var(--mute);margin:14px 0 2px}
+.lbl:first-child{margin-top:0}
+.val{font-size:20px;word-break:break-word}
+a.btn{display:block;text-align:center;min-height:52px;line-height:52px;border-radius:14px;background:var(--acc);color:#fff;text-decoration:none;font-weight:600;margin-top:22px}
+p.n{color:var(--mute);font-size:14px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card"></div>
+  <a class="btn" id="go" href="#">Add to Anki</a>
+  <p class="n" id="msg"></p>
+</div>
+<script>
+{
+  const raw = location.hash.slice(1);
+  const p = new URLSearchParams(raw.replace(/\+/g, '%2B'));
+  if (!p.has('type')) p.set('type', 'Basic');
+  if (!p.has('deck')) p.set('deck', 'Default');
+
+  const fields = [...p.entries()].filter(([k]) => k.startsWith('fld'));
+  const card = document.getElementById('card');
+  const msg = document.getElementById('msg');
+  const go = document.getElementById('go');
+
+  if (!fields.length) {
+    card.innerHTML = '<div class="val">No card in this link.</div>';
+    go.style.display = 'none';
+  } else {
+    const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    card.innerHTML = fields.map(([k, v]) =>
+      `<div class="lbl">${esc(k.slice(3))}</div><div class="val">${esc(v).replace(/&lt;br\s*\/?&gt;/gi, '<br>')}</div>`
+    ).join('') + `<div class="lbl">Deck</div><div class="val">${esc(p.get('deck'))}</div>`;
+
+    const q = [...p.entries()].map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+    const url = 'anki://x-callback-url/addnote?' + q;
+    go.href = url;
+    msg.textContent = 'Opening AnkiMobile… if nothing happens, tap the button.';
+    setTimeout(() => { location.href = url; }, 300);
+  }
+}
+</script>
+</body>
+</html>
