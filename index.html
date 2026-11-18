@@ -25,31 +25,44 @@ p.n{color:var(--mute);font-size:14px;text-align:center}
 </div>
 <script>
 {
-  const raw = location.hash.slice(1);
-  const p = new URLSearchParams(raw.replace(/\+/g, '%2B'));
-  if (!p.has('type')) p.set('type', 'Basic');
-  if (!p.has('deck')) p.set('deck', 'Default');
-
-  const fields = [...p.entries()].filter(([k]) => k.startsWith('fld'));
   const card = document.getElementById('card');
   const msg = document.getElementById('msg');
   const go = document.getElementById('go');
+  const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let last = null;
 
-  if (!fields.length) {
-    card.innerHTML = '<div class="val">No card in this link.</div>';
-    go.style.display = 'none';
-  } else {
-    const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function render() {
+    const raw = location.hash.slice(1);
+    if (raw === last) return;
+    last = raw;
+
+    const p = new URLSearchParams(raw.replace(/\+/g, '%2B'));
+    if (!p.has('type')) p.set('type', 'Basic');
+    if (!p.has('deck')) p.set('deck', 'Default');
+    const fields = [...p.entries()].filter(([k]) => k.startsWith('fld'));
+
+    if (!fields.length) {
+      card.innerHTML = '<div class="val">No card in this link.</div>';
+      go.style.display = 'none';
+      msg.textContent = '';
+      return;
+    }
+
     card.innerHTML = fields.map(([k, v]) =>
       `<div class="lbl">${esc(k.slice(3))}</div><div class="val">${esc(v).replace(/&lt;br\s*\/?&gt;/gi, '<br>')}</div>`
     ).join('') + `<div class="lbl">Deck</div><div class="val">${esc(p.get('deck'))}</div>`;
 
     const q = [...p.entries()].map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
     const url = 'anki://x-callback-url/addnote?' + q;
+    go.style.display = '';
     go.href = url;
     msg.textContent = 'Opening AnkiMobile… if nothing happens, tap the button.';
     setTimeout(() => { location.href = url; }, 300);
   }
+
+  render();
+  window.addEventListener('hashchange', render);
+  window.addEventListener('pageshow', () => { last = null; render(); });
 }
 </script>
 </body>
